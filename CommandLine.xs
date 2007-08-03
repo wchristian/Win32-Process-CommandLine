@@ -12,7 +12,6 @@
 #include <windows.h>
 
 #define ProcessBasicInformation 0
-#define BUF_SIZE 512
 
 typedef struct
 {
@@ -69,14 +68,17 @@ typedef LONG (WINAPI *PROCNTQSIP)(HANDLE,UINT,PVOID,ULONG,PULONG);
 
 PROCNTQSIP NtQueryInformationProcess;
 
-BOOL GetProcessCmdLine(DWORD dwId,LPWSTR wBuf,DWORD dwBufLen);
+BOOL GetProcessCmdLine(DWORD dwId,LPWSTR *wBuf);
 
-int GetPidCommandLine(int pid, char* cmdParameter){
-	int    dwBufLen = BUF_SIZE*2;
-	WCHAR  wstr[BUF_SIZE]   = {'\0'};
-	char   mbch[BUF_SIZE*2] = {'\0'};
-	DWORD  nOut, dwMinSize;
+int GetPidCommandLine(int pid, SV *cmdParameter){
+	DWORD dwMinSize;
+#ifdef _DEBUG
 	HANDLE hOut;
+	DWORD  nOut;
+#endif
+	LPWSTR  wstr = 0;
+	char   *mbch = 0;
+
 	
     //printf("  Call GetPidCommandLine, pid: %i, %i\n", pid, dwBufLen);
 
@@ -86,8 +88,8 @@ int GetPidCommandLine(int pid, char* cmdParameter){
                                             );
     if (!NtQueryInformationProcess){ return -1;}
 
-    if (! GetProcessCmdLine(pid, wstr, dwBufLen)){
-		cmdParameter = '\0';
+    if (! GetProcessCmdLine(pid, &wstr)){
+		return -1;
 
 		#ifdef _DEBUG
 	    printf("  Error: cannot get %i's command line string\n", pid);
@@ -102,6 +104,9 @@ int GetPidCommandLine(int pid, char* cmdParameter){
 		dwMinSize = WideCharToMultiByte(CP_OEMCP, 0, wstr, -1, NULL, 0, NULL, NULL);
 		
 		//convert utf16 to multibyte and save to mbch
+		mbch = (char*) malloc(dwMinSize);
+		if (!mbch)
+		    return -1;
 		dwMinSize = WideCharToMultiByte(CP_OEMCP, 0, (PWSTR)wstr, -1, mbch, dwMinSize, NULL, NULL);
 
 #ifdef _DEBUG
@@ -112,26 +117,25 @@ int GetPidCommandLine(int pid, char* cmdParameter){
 			return -1;
 		}
 
-		//make sure no over buffer
-		if(wcslen(wstr) < BUF_SIZE){
-			if(WriteFile (hOut, wstr, wcslen(wstr) * 2, &nOut, NULL)){
-				printf("\n  write %i byte to _pidCmdLine.txt that is in unicode\n", nOut);
-			}
+		if(WriteFile (hOut, wstr, wcslen(wstr) * 2, &nOut, NULL)){
+			printf("\n  write %i byte to _pidCmdLine.txt that is in unicode\n", nOut);
 		}
 		CloseHandle (hOut);
 #endif
 
-		//copy to return buffer
-		strncpy(cmdParameter, mbch, dwMinSize);
 
 		#ifdef _DEBUG
 		printf("  convert unicode to MB string: %s \n", mbch);
 		#endif
 
+		//copy to return buffer
+		sv_setpv(cmdParameter, mbch);
+		free(mbch);
+		free(wstr);
 		return dwMinSize;
 }
 
-BOOL GetProcessCmdLine(DWORD dwId,LPWSTR wBuf,DWORD dwBufLen)
+BOOL GetProcessCmdLine(DWORD dwId, LPWSTR *wBuf)
 {
     LONG                      status;
     HANDLE                    hProcess;
@@ -142,6 +146,7 @@ BOOL GetProcessCmdLine(DWORD dwId,LPWSTR wBuf,DWORD dwBufLen)
     DWORD                     dwSize;
     LPVOID                    lpAddress;
     BOOL                      bRet = FALSE;
+	*wBuf = 0;
 
     // Get process handle
     hProcess = OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ,FALSE,dwId);
@@ -180,20 +185,22 @@ BOOL GetProcessCmdLine(DWORD dwId,LPWSTR wBuf,DWORD dwBufLen)
 
     lpAddress = ProcParam.CommandLine.Buffer;
     dwSize = ProcParam.CommandLine.Length;
+	// Add two bytes for the nulls (unicode character is 2 bytes, i think).
+	*wBuf = (LPWSTR)malloc(dwSize+2);
 
-    if (dwBufLen<dwSize)
+    if (!*wBuf)
        goto cleanup;
-
+    /* write command line into wBuf */
     if (!ReadProcessMemory( hProcess,
                             lpAddress,
-                            wBuf,
+                            *wBuf,
                             dwSize,
                             &dwDummy
                           )
        )
        goto cleanup;
-
-
+    ((char*)(*wBuf))[dwSize] = '\0';
+    ((char*)(*wBuf))[dwSize+1] = '\0';
     bRet = TRUE;
 
 cleanup:
@@ -203,6 +210,7 @@ cleanup:
 
     return bRet;
 }
+// Ddreyfus. changed from char*cmdParameter to char&cmdParameter
 
 MODULE = Win32::Process::CommandLine		PACKAGE = Win32::Process::CommandLine		
 
@@ -210,7 +218,13 @@ INCLUDE: const-xs.inc
 
 int
 GetPidCommandLine(pid, cmdParameter)
+INPUT:
 	int pid
-	char* cmdParameter
+	SV *		cmdParameter;
+CODE:
+    /* initialize to undefined */
+    sv_setsv(cmdParameter, newSV(0));
+	RETVAL 	= GetPidCommandLine(pid, cmdParameter);
 OUTPUT:
 	cmdParameter
+	RETVAL

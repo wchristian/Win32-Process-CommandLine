@@ -4,3 +4,9 @@ Revision history for Perl extension Win32::Process::CommandLine.
 	- original version; created by h2xs 1.23 with options
 		-x -n Win32::Process::CommandLine CommandLine.h
 
+0.02  Thursday, August 02, 2007	4:56 PM
+	- Special thanks to David at ddreyfus@bu.edu
+	- Handle arbitrarily long command lines by using dynamic memory allocation.
+	- Null terminate the Unicode string to avoid junk characters.
+	- Update the Perl SV object containing the input command string buffer
+	- copy same test case from test.pl to t/Win32-Process-CommandLine.t
