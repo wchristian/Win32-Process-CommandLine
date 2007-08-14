@@ -1,5 +1,0 @@
-LIBRARY "CommandLine"
-EXPORTS
-  boot_Win32__Process__CommandLine
-  _boot_Win32__Process__CommandLine = boot_Win32__Process__CommandLine
-  

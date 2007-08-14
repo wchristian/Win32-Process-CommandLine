@@ -94,6 +94,9 @@ To install this module type the following:
    make test
    make install
 
+If you don't have a compiler and you have perl installed at C:\perl, there's a compiled version at 
+http://blog.chinaunix.net/upfile/070815015110.rar
+
 DEPENDENCIES
 
 This module requires these other modules and libraries for testing:

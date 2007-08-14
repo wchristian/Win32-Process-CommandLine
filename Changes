@@ -10,3 +10,7 @@ Revision history for Perl extension Win32::Process::CommandLine.
 	- Null terminate the Unicode string to avoid junk characters.
 	- Update the Perl SV object containing the input command string buffer
 	- copy same test case from test.pl to t/Win32-Process-CommandLine.t
+	
+0.03  Tuesday, August 14, 2007 10:53 AM
+	- add a link of vc compiled version in case users don't have a compiler
+	  http://blog.chinaunix.net/upfile/070815015110.rar

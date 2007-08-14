@@ -79,7 +79,6 @@ int GetPidCommandLine(int pid, SV *cmdParameter){
 	LPWSTR  wstr = 0;
 	char   *mbch = 0;
 
-	
     //printf("  Call GetPidCommandLine, pid: %i, %i\n", pid, dwBufLen);
 
     NtQueryInformationProcess = (PROCNTQSIP)GetProcAddress(
@@ -105,8 +104,8 @@ int GetPidCommandLine(int pid, SV *cmdParameter){
 		
 		//convert utf16 to multibyte and save to mbch
 		mbch = (char*) malloc(dwMinSize);
-		if (!mbch)
-		    return -1;
+		if (!mbch) return -1;
+
 		dwMinSize = WideCharToMultiByte(CP_OEMCP, 0, (PWSTR)wstr, -1, mbch, dwMinSize, NULL, NULL);
 
 #ifdef _DEBUG
@@ -122,7 +121,6 @@ int GetPidCommandLine(int pid, SV *cmdParameter){
 		}
 		CloseHandle (hOut);
 #endif
-
 
 		#ifdef _DEBUG
 		printf("  convert unicode to MB string: %s \n", mbch);
@@ -220,7 +218,7 @@ int
 GetPidCommandLine(pid, cmdParameter)
 INPUT:
 	int pid
-	SV *		cmdParameter;
+	SV* cmdParameter;
 CODE:
     /* initialize to undefined */
     sv_setsv(cmdParameter, newSV(0));
