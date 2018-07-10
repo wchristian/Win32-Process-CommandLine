@@ -22,46 +22,36 @@ typedef struct
 
 typedef struct
 {
-    ULONG          AllocationSize;
-    ULONG          ActualSize;
-    ULONG          Flags;
-    ULONG          Unknown1;
-    UNICODE_STRING Unknown2;
-    HANDLE         InputHandle;
-    HANDLE         OutputHandle;
-    HANDLE         ErrorHandle;
-    UNICODE_STRING CurrentDirectory;
-    HANDLE         CurrentDirectoryHandle;
-    UNICODE_STRING SearchPaths;
-    UNICODE_STRING ApplicationName;
+    BYTE           Reserved1[16];
+    PVOID          Reserved2[10];
+    UNICODE_STRING ImagePathName;
     UNICODE_STRING CommandLine;
-    PVOID          EnvironmentBlock;
-    ULONG          Unknown[9];
-    UNICODE_STRING Unknown3;
-    UNICODE_STRING Unknown4;
-    UNICODE_STRING Unknown5;
-    UNICODE_STRING Unknown6;
 } PROCESS_PARAMETERS, *PPROCESS_PARAMETERS;
 
 typedef struct
 {
-    ULONG               AllocationSize;
-    ULONG               Unknown1;
-    HINSTANCE           ProcessHinstance;
-    PVOID               ListDlls;
+    BYTE                Reserved1[2];
+    BYTE                BeingDebugged;
+    BYTE                Reserved2[1];
+    PVOID               Reserved3[2];
+    PVOID               Ldr;  
     PPROCESS_PARAMETERS ProcessParameters;
-    ULONG               Unknown2;
-    HANDLE              Heap;
+    BYTE                Reserved4[104];
+    PVOID               Reserved5[52];
+    PVOID               PostProcessInitRoutine;
+    BYTE                Reserved6[128];
+    PVOID               Reserved7[1];
+    ULONG               SessionId;  
 } PEB, *PPEB;
 
 typedef struct
 {
-    DWORD ExitStatus;
+    PVOID ExitStatus;
     PPEB  PebBaseAddress;
-    DWORD AffinityMask;
-    DWORD BasePriority;
-    ULONG UniqueProcessId;
-    ULONG InheritedFromUniqueProcessId;
+    PVOID AffinityMask;
+    PVOID BasePriority;
+    ULONG_PTR UniqueProcessId;
+    PVOID InheritedFromUniqueProcessId;
 }   PROCESS_BASIC_INFORMATION;
 
 typedef LONG (WINAPI *PROCNTQSIP)(HANDLE,UINT,PVOID,ULONG,PULONG);
@@ -140,8 +130,8 @@ BOOL GetProcessCmdLine(DWORD dwId, LPWSTR *wBuf)
     PROCESS_BASIC_INFORMATION pbi;
     PEB                       Peb;
     PROCESS_PARAMETERS        ProcParam;
-    DWORD                     dwDummy;
-    DWORD                     dwSize;
+    SIZE_T                    dwDummy;
+    SIZE_T                    dwSize;
     LPVOID                    lpAddress;
     BOOL                      bRet = FALSE;
 	*wBuf = 0;
